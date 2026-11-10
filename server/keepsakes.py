@@ -45,7 +45,9 @@ def _adapt_existing(db):
         collector TEXT DEFAULT 'me',      -- 'me' = AI 自己收的（=珍藏），'her' = 你收的
         role TEXT,                        -- 'user' / 'assistant' / 'dialogue'（多句，每行「我：…」「她：…」）
         quote TEXT, why TEXT DEFAULT '',
-        message_id INTEGER, photo_top TEXT DEFAULT '',
+        context TEXT DEFAULT '',          -- 多句卡的样式数据（docs/07）
+        session_id INTEGER, message_id INTEGER,
+        photo_top TEXT DEFAULT '', photo_corner TEXT DEFAULT '',
         created_at TEXT DEFAULT (datetime('now')))""")
 
 
