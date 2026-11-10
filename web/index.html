@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f2">
+<title>Keepsake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+<style>
+/* ── 想换颜色，改这里就够了 ── */
+:root{
+  --page:#f2f2f2;           /* 泡泡页底色 */
+  --ink:#3c3c3e;            /* 正文 */
+  --meta:#a2a2a4;           /* 小字 */
+  --sheet:rgba(247,247,247,.9);
+  --you-bub:#19191a;        /* 人的气泡 */
+  --you-ink:#ffffff;
+  --ta-bub:#ffffff;         /* AI 的气泡 */
+  --ta-ink:rgba(0,0,0,.84);
+  --bub-op:.9;              /* 气泡不透明度 */
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --mono:ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:var(--page);overflow:hidden}
+body{font-family:var(--serif);color:var(--ink);-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono)}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 22px) 24px 0;display:flex;justify-content:space-between;align-items:baseline;z-index:5;pointer-events:none}
+.top h1{font-weight:400;font-size:20px;letter-spacing:6px}
+.top span{font-size:10px;letter-spacing:1.5px;color:var(--meta)}
+.tags{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 58px);z-index:5;display:flex;gap:16px;padding:0 24px;overflow-x:auto;scrollbar-width:none;font-size:10.5px;letter-spacing:2px;color:var(--meta)}
+.tags::-webkit-scrollbar{display:none}
+.tags span{white-space:nowrap;cursor:pointer;padding:3px 0;border-bottom:1px solid transparent}
+.tags span.on{color:var(--ink);border-bottom-color:var(--ink)}
+.labels{position:fixed;inset:0;pointer-events:none;z-index:3}
+.lab{position:absolute;transform:translate(-50%,0);text-align:center;white-space:nowrap;transition:opacity .5s}
+.lab b{display:block;font-weight:400;font-size:12px;letter-spacing:3px}
+.lab small{display:block;margin-top:3px;font-size:8.5px;letter-spacing:1.2px;color:var(--meta)}
+.hint{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom) + 22px);font-size:10px;letter-spacing:2.5px;color:#a8a8aa;z-index:4;pointer-events:none}
+.knob{position:fixed;left:20px;bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:6;display:flex;align-items:center;gap:8px;font-size:9.5px;letter-spacing:2px;color:var(--meta)}
+.knob input{-webkit-appearance:none;appearance:none;width:76px;height:16px;background:transparent}
+.knob input::-webkit-slider-runnable-track{height:1px;background:#c8c8ca}
+.knob input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#f7f7f7;border:1px solid #9a9a9c;margin-top:-6px}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:4px;color:#a8a8aa;z-index:9;background:var(--page);transition:opacity .8s}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:60;font-size:11.5px;letter-spacing:.08em;color:#666;background:rgba(255,255,255,.85);padding:6px 14px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+.top,.tags,.hint,.knob{transition:opacity .4s}
+body.opened .top,body.opened .tags,body.opened .hint,body.opened .knob{opacity:0;pointer-events:none}
+
+/* ── 点开：泡放大停在上面，下面升起一张纸 ── */
+.open{position:fixed;inset:0;z-index:20;overflow-y:auto;scrollbar-width:none;pointer-events:none}
+.open::-webkit-scrollbar{display:none}
+.open.on{pointer-events:auto}
+.open .back{position:fixed;left:16px;top:calc(env(safe-area-inset-top) + 18px);font-size:12px;letter-spacing:2px;color:var(--meta);cursor:pointer;z-index:22;padding:6px 10px;opacity:0;transition:opacity .4s}
+.open.on .back{opacity:1}
+.gapTop{height:44vh}
+.sheet{min-height:62vh;background:var(--sheet);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:28px 28px 0 0;
+  padding:22px 18px calc(env(safe-area-inset-bottom) + 60px);box-shadow:0 -6px 30px rgba(0,0,0,.05);
+  transform:translateY(60vh);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.open.on .sheet{transform:none}
+.hd{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 14px}
+.hd h2{font-weight:400;font-size:18px;letter-spacing:3px}
+.hd .r{font-size:9.5px;letter-spacing:1.5px;color:var(--meta);display:flex;gap:12px;align-items:baseline}
+.hd .more{color:var(--ink);cursor:pointer;font-size:14px;letter-spacing:1px;padding:0 2px}
+.tagline{font-size:9.5px;letter-spacing:2px;color:var(--meta);padding:0 4px 12px}
+
+/* 对话卡：一张圆角卡，底下一张壁纸，上面是聊天气泡 */
+.card{border-radius:24px;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:132px;background:var(--wall);position:relative}
+.card[data-wall=paper]{--wall:linear-gradient(135deg,#ede3d6,#faf2e8)}
+.card[data-wall=blue]{--wall:linear-gradient(135deg,#c9e0eb,#abc7d4)}
+.card[data-wall=night]{--wall:linear-gradient(135deg,#454f63,#12141c)}
+.card[data-wall=mist]{--wall:linear-gradient(160deg,#e9e6ef,#d9dde6)}
+.card::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.06),rgba(0,0,0,.05));pointer-events:none}
+.row{display:flex;position:relative;z-index:1}
+.row.you{justify-content:flex-end;padding-left:35px}
+.row.ta{padding-right:35px}
+.bub{font-family:-apple-system,"PingFang SC",sans-serif;font-size:13.5px;line-height:1.6;padding:9px 12px;border-radius:16px;box-shadow:0 3px 8px rgba(0,0,0,.08);-webkit-user-select:text;user-select:text;white-space:pre-wrap}
+.row.you .bub{background:color-mix(in srgb,var(--you-bub) calc(var(--bub-op)*100%),transparent);color:var(--you-ink)}
+.row.ta .bub{background:color-mix(in srgb,var(--ta-bub) calc(var(--bub-op)*100%),transparent);color:var(--ta-ink)}
+.card.glass .bub{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:.7px solid rgba(255,255,255,.3)}
+.card.glass .row.you .bub{background:color-mix(in srgb,var(--you-bub) calc(var(--bub-op)*48%),transparent)}
+.card.glass .row.ta .bub{background:color-mix(in srgb,var(--ta-bub) calc(var(--bub-op)*48%),transparent)}
+.row.ctx{opacity:.45}
+.row.ctx .bub{font-size:12px;box-shadow:none}
+
+.drawer{display:none;margin:14px 4px 0;padding:12px 0 4px;border-top:.5px solid #d8d8da;font-size:10.5px;letter-spacing:1.5px;color:var(--meta)}
+.drawer.on{display:block}
+.drawer .opt{display:flex;gap:14px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.drawer .opt span{cursor:pointer;padding:3px 0;border-bottom:1px solid transparent}
+.drawer .opt span.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+.sec{font-size:9.5px;letter-spacing:3px;color:#a6a6a8;margin:28px 4px 12px;display:flex;align-items:center;gap:10px}
+.sec.first{margin-top:6px}
+.sec::after{content:"";flex:1;height:1px;background:#dcdcde}
+.pre{margin:0 4px 14px;padding-left:13px;border-left:1.5px solid #c4c4c6}
+.pre.ta{border-left-color:#8e8e92}
+.pre .w{font-size:9.5px;letter-spacing:2.5px;color:var(--meta);margin-bottom:5px}
+.pre p{font-size:14px;line-height:1.9;white-space:pre-wrap;cursor:text}
+.pre p.empty{color:#bcbcbe;font-size:13px}
+.pre textarea,.box textarea{width:100%;border:none;border-bottom:1px solid #d0d0d2;background:transparent;font:inherit;font-size:14px;line-height:1.8;color:var(--ink);resize:none;outline:none;padding:4px 0;-webkit-user-select:text;user-select:text}
+.askme{display:inline-block;margin-left:8px;font-size:11px;color:#555;border-bottom:1px solid #999;cursor:pointer}
+.cm{margin:0 4px 18px;padding-left:11px;border-left:1px solid #d6d6d8}
+.cm .w{font-size:9.5px;letter-spacing:1.5px;color:var(--meta);display:flex;gap:10px;align-items:center}
+.cm .w b{font-weight:400;padding:1px 6px;background:#e4e4e6;color:#4a4a4c}
+.cm .w b.ta{background:#3a3a3c;color:#f2f2f2}
+.cm p{font-size:14px;line-height:1.85;margin:5px 0 4px;-webkit-user-select:text;user-select:text}
+.cm .re{font-size:9.5px;letter-spacing:2px;color:#a6a6a8;cursor:pointer}
+.cm .kids{margin:12px 0 0 4px}
+.cm .kids .cm{margin:0 0 14px}
+.empty-cm{color:#bcbcbe;font-size:13px;margin:0 4px 16px}
+.box{margin:10px 4px 0;display:flex;gap:10px;align-items:flex-end}
+.box .x{font-size:10px;color:#a6a6a8;cursor:pointer;padding-bottom:9px}
+.wbtn{flex:none;font-size:11px;letter-spacing:3px;color:#f6f6f6;background:#38383a;padding:8px 16px;border-radius:16px;cursor:pointer}
+.note{font-size:9.5px;letter-spacing:1px;color:#b4b4b6;margin:10px 4px 0;line-height:1.7}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script src="demo-data.js"></script>
+</head>
+<body>
+<div id="load">吹泡泡……</div>
+<canvas id="c"></canvas>
+<div class="top"><h1>封存</h1><span class="mono" id="count"></span></div>
+<div class="tags mono" id="tags"></div>
+<div class="labels" id="labels"></div>
+<div class="toast mono" id="toast"></div>
+<label class="knob mono">圆<input type="range" id="soft" min="0" max="2" step="0.05" value="1">软</label>
+<div class="hint mono">按住凑近 · 轻点打开 · 下拉换一批</div>
+<div class="open" id="open">
+  <div class="back mono" id="back">‹ 封存</div>
+  <div class="gapTop" id="gapTop"></div>
+  <div class="sheet" id="sheet"></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),2200)}
+const NAME={you:'你',ta:'Ta'};
+
+// ── 数据 ──
+// demo 里你写的东西只存在这台设备的浏览器里。接后端时，把 load/save 换成 /api/keepsakes 那几个接口（见 docs/01）。
+const STORE='keepsake_demo_v1';
+let SAVED={};try{SAVED=JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){}
+const save=()=>{try{localStorage.setItem(STORE,JSON.stringify(SAVED))}catch(e){}};
+const NOW=Date.now(),DAY=864e5;
+const p2=x=>String(x).padStart(2,'0');
+const fmtD=ts=>{const d=new Date(ts);return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())}`};
+const fmtN=ts=>{const d=new Date(ts);return `${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`};
+const ALL=window.KEEPSAKE_DEMO.map(x=>{
+  const s=SAVED[x.key]||{};
+  const at=NOW-x.daysAgo*DAY-3*3600e3;
+  const m={...x,at,d:fmtD(at),pre:{...x.pre,...(s.pre||{})},
+    notes:[...x.notes.map(n=>({...n,at:NOW-n.ago*DAY})),...(s.notes||[])],
+    touch:Math.max(NOW-x.daysAgo*DAY,s.touch||0),askMe:s.askMe||0,wall:s.wall,glass:s.glass};
+  return m});
+// 雾：最后一次被碰（存下 / 点开 / 写一句）超过 3 天开始起雾，83 天满
+function haze(m){const days=(NOW-m.touch)/DAY;m.days=Math.round(days);m.haze=Math.min(1,Math.max(0,(days-3)/80))}
+ALL.forEach(haze);
+$('count').textContent=`${ALL.length} 颗 · 你存 ${ALL.filter(m=>m.who=='you').length} · Ta 存 ${ALL.filter(m=>m.who=='ta').length}`;
+
+// 一屏只吹 9 颗：最近碰过的 6 颗 + 雾最重的 3 颗
+const CAP=9,NEW=6;let BATCH=0,TAGF='全部';
+const inFilter=m=>TAGF=='全部'||(TAGF=='你存的'?m.who=='you':TAGF=='Ta 存的'?m.who=='ta':m.tags.includes(TAGF));
+function choose(){
+  const L=ALL.filter(inFilter).sort((a,b)=>b.touch-a.touch);
+  if(L.length<=CAP) return L;
+  const nb=Math.ceil(L.length/CAP),b=BATCH%nb;
+  const fresh=L.slice(b*NEW,b*NEW+NEW),oldEnd=L.length-b*(CAP-NEW);
+  const out=[...fresh,...L.slice(Math.max(b*NEW+NEW,oldEnd-(CAP-NEW)),oldEnd)];
+  for(const m of L){if(out.length>=CAP)break;if(!out.includes(m))out.push(m)}
+  return out;
+}
+
+// ── three ──
+const canvas=$('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#f2f2f2');
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(renderer),0.03).texture;
+const camera=new THREE.PerspectiveCamera(32,1,.1,100);
+camera.position.set(0,0,13);
+// 背后一张很淡的渐变：泡要有东西可以折射，才看得出是泡
+{const cv=document.createElement('canvas');cv.width=cv.height=512;const g=cv.getContext('2d');
+  const gr=g.createRadialGradient(256,230,20,256,256,360);gr.addColorStop(0,'#fdfdfd');gr.addColorStop(.6,'#f2f2f2');gr.addColorStop(1,'#e2e2e3');
+  g.fillStyle=gr;g.fillRect(0,0,512,512);const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshBasicMaterial({map:t,toneMapped:false}));bg.position.z=-6;scene.add(bg)}
+
+// 泡里封着的那段：只有字，按每一行所在高度的弦长折行，铺满一个圆
+function inkDisc(m){
+  const W=1024,R=W/2,cv=document.createElement('canvas');cv.width=cv.height=W;const g=cv.getContext('2d');
+  const fl=([w,t])=>[w,t.replace(/\s*\n+\s*/g,' ')];
+  const rows0=[...m.ctx.map(x=>[...fl(x),1]),...m.lines.map(x=>[...fl(x),0])];
+  const fs=34,lh=54;g.font=`${fs}px "Noto Serif SC", serif`;g.textBaseline='middle';
+  const chord=y=>{const d=Math.abs(y-R);return d>=R*.96?0:2*Math.sqrt((R*.96)**2-d*d)*.74};
+  let rows=[],top=R;
+  for(let it=0;it<4;it++){
+    rows=[];let y=top;
+    rows0.forEach(([w,t,c])=>{let rest=t;
+      while(rest.length){let n=rest.length;const cw=Math.max(chord(y),fs*3);
+        while(n>1&&g.measureText(rest.slice(0,n)).width>cw)n--;
+        rows.push({w,c,s:rest.slice(0,n),y});rest=rest.slice(n);y+=lh}
+      y+=lh*.35});
+    top=R-(y-top-lh*.35)/2+lh/2;
+  }
+  rows.forEach(({w,c,s,y})=>{const cw=chord(y)||fs*3,tw=g.measureText(s).width;
+    g.fillStyle=c?'rgba(0,0,0,.38)':'#000';g.fillText(s,w=='you'?R+cw/2-tw:R-cw/2,y)});
+  const t=new THREE.CanvasTexture(cv);t.anisotropy=4;return t;
+}
+// 透过玻璃球看那张圆：中间鼓、边上挤弯、往边上化进底色。
+// 🔴 不能设 transparent：transmission 那一遍只画不透明物体，泡里会是空的。所以用 discard。
+const PAPER=new THREE.Color('#f1f1f1');
+function lensMat(tex,seed){
+  return new THREE.ShaderMaterial({uniforms:{map:{value:tex},paper:{value:PAPER},ink:{value:new THREE.Color('#55555a')},t:{value:0},seed:{value:seed},fade:{value:0}},
+    side:THREE.DoubleSide,
+    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform sampler2D map;uniform vec3 paper,ink;uniform float t,seed,fade;varying vec2 vUv;
+      void main(){
+        vec2 p=vUv*2.-1.;float r=length(p);if(r>1.)discard;
+        float k=r<1e-4?.6366:asin(r)/(1.5708*r);
+        vec2 q=p*k+.012*vec2(sin(p.y*7.+t*.8+seed),cos(p.x*6.-t*.7+seed));
+        float a=texture2D(map,q*.5+.5).a*(1.-smoothstep(.6,.98,r))*(1.-fade*.55);
+        if(a<.06)discard;
+        gl_FragColor=vec4(mix(paper,ink,a),1.);
+      }`});
+}
+// 膜会软：顶点沿法线起伏几个低频波，每颗不一样
+function softFilm(mat,seed,amp){
+  mat.userData.t={value:0};mat.userData.amp={value:amp};mat.userData.base=amp;
+  mat.onBeforeCompile=sh=>{sh.uniforms.uT=mat.userData.t;sh.uniforms.uAmp=mat.userData.amp;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uT,uAmp;')
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
+        vec3 pn=normalize(position);
+        float w=sin(pn.x*2.3+uT*.9+${seed.toFixed(2)})*sin(pn.y*1.9-uT*.7+${(seed*1.3).toFixed(2)})
+               +.6*sin(pn.z*3.1+pn.x*1.7+uT*1.15+${(seed*.7).toFixed(2)});
+        transformed+=normal*w*uAmp;`)};
+  mat.customProgramCacheKey=()=>'soft'+seed.toFixed(2);
+}
+const glass=(r,k)=>new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.05,transmission:1,thickness:r*k,ior:1.12,
+  clearcoat:.5,clearcoatRoughness:.04,specularIntensity:.55,envMapIntensity:.55});
+const B=[];let M=[];
+const rnd=(()=>{let s=17;return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646}})();
+function clear(){
+  B.forEach(b=>{b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const u=o.material.uniforms;if(u&&u.map)u.map.value.dispose();o.material.dispose()}});
+    scene.remove(b.g);b.lab&&b.lab.remove()});
+  B.length=0;
+}
+function build(){
+  M=choose();const SC=M.length>=7?.74:.9;
+  M.forEach((m,i)=>{
+    const chars=m.lines.reduce((a,[,t])=>a+t.length,0);
+    const r=Math.min(1.05,.3+Math.min(chars,120)*.004+m.notes.length*.06+Math.pow(rnd(),1.4)*.45)*SC;
+    const mat=glass(r,.45);
+    const sph=new THREE.Mesh(new THREE.SphereGeometry(r,64,48),mat);
+    const card=new THREE.Mesh(new THREE.PlaneGeometry(r*1.9,r*1.9),lensMat(inkDisc(m),i*1.7));
+    const g=new THREE.Group();g.add(card);g.add(sph);scene.add(g);
+    sph.userData.b=B.length;softFilm(mat,i*2.1+.5,r*.06*Math.max(.25,1.25-r*.9));
+    B.push({m,i,r,g,sph,card,mat,vx:0,vy:0,x:0,y:0,ph:rnd()*6.28,press:0,zoom:0,off:0,lab:null,fog:m.haze});
+  });
+  for(let k=0;k<6;k++){   // 几颗空的小泡点缀
+    const r=k<1?.2+rnd()*.08:.04+Math.pow(rnd(),1.6)*.12;
+    const mat=glass(r,.4);const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.SphereGeometry(r,40,30),mat));scene.add(g);
+    B.push({m:null,r,g,mat,vx:0,vy:0,x:(rnd()-.5)*3,y:(rnd()-.5)*4,ph:rnd()*6.28,press:0,zoom:0,off:0,fog:0});
+  }
+  const big=new Set(B.filter(b=>b.m).sort((a,b)=>b.r-a.r).slice(0,5));   // 名字只挂最大的 5 颗，别的按住才露
+  B.forEach(b=>{if(!b.m)return;b.named=big.has(b);const d=document.createElement('div');d.className='lab';$('labels').appendChild(d);b.lab=d;label(b)});
+  B.forEach(b=>{const [hx,hy]=homeOf(b);b.x=hx+(rnd()-.5)*2;b.y=hy+(rnd()-.5)*2});
+  setSoft(+$('soft').value);
+}
+const label=b=>{b.lab.innerHTML=`<b>${esc(b.m.t)}</b><small class="mono">${b.m.d.slice(5)}${b.m.days>30?` · ${b.m.days} 天没回来看`:''}</small>`};
+
+let VW=4,VH=8;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  VH=2*camera.position.z*Math.tan(THREE.MathUtils.degToRad(camera.fov/2));VW=VH*camera.aspect}
+addEventListener('resize',resize);
+// 家：清楚的往上浮，雾重的往下沉
+function homeOf(b){
+  if(!b.m) return [b.x*.3,b.y*.3];
+  const a=b.i*2.39996+.7,d=Math.sqrt(b.i+.6)*.24;
+  return [Math.cos(a)*d*VW*.7,VH*.14+Math.sin(a)*d*VH*.3-b.fog*VH*.36];
+}
+
+// ── 手 ──
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();
+let held=null,downT=0,downXY=[0,0],moved=false,pullY=null,FOCUS=null;
+function pick(e){ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(ptr,camera);
+  const hit=ray.intersectObjects(B.filter(b=>b.m).map(b=>b.sph))[0];return hit?B[hit.object.userData.b]:null}
+canvas.addEventListener('pointerdown',e=>{if(FOCUS)return;held=pick(e);pullY=held?null:e.clientY;downT=performance.now();downXY=[e.clientX,e.clientY];moved=false;
+  if(held&&navigator.vibrate)navigator.vibrate(8)});
+canvas.addEventListener('pointermove',e=>{if(held&&Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1])>10)moved=true;
+  if(held&&moved){const k=VW/innerWidth;held.vx+=(e.movementX||0)*k*.06;held.vy-=(e.movementY||0)*k*.06}});
+canvas.addEventListener('pointerup',e=>{
+  if(pullY!=null&&e.clientY-pullY>90&&Math.abs(e.clientX-downXY[0])<80){BATCH++;toast('换了一批');clear();build()}
+  pullY=null;if(!held)return;const b=held;held=null;if(!moved&&performance.now()-downT<260)openMem(b)});
+canvas.addEventListener('pointercancel',()=>held=null);
+
+// ── 每一帧 ──
+const clock=new THREE.Clock();
+function tick(){
+  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  B.forEach(b=>{
+    // 点开的那颗：放大，停在上面；别的缩小、淡开
+    b.zoom+=((FOCUS===b?1:0)-b.zoom)*Math.min(1,dt*5);
+    b.off+=((FOCUS&&FOCUS!==b?1:0)-b.off)*Math.min(1,dt*5);
+    let [hx,hy]=homeOf(b);
+    const Z=FOCUS===b?Math.min(VW*.34/b.r,VH*.17/b.r):1;
+    if(FOCUS===b){hx=0;hy=VH/2-VH*.22}
+    b.vx+=(hx-b.x)*(FOCUS===b?3:.35)*dt;b.vy+=(hy-b.y)*(FOCUS===b?3:.55)*dt;
+    if(FOCUS!==b)B.forEach(o=>{if(o===b||o===FOCUS)return;const dx=b.x-o.x,dy=b.y-o.y,d=Math.hypot(dx,dy)||1e-3,min=b.r*(1+b.press*.22)+o.r*(1+o.press*.22)+.05;
+      if(d<min){const f=(min-d)*3.2*dt;b.vx+=dx/d*f;b.vy+=dy/d*f}});
+    if(FOCUS!==b){const mx=VW/2-b.r-.06;if(b.x>mx)b.vx-=(b.x-mx)*9*dt;if(b.x<-mx)b.vx+=(-mx-b.x)*9*dt;
+      const myT=VH/2-b.r-1.1,myB=-VH/2+b.r+.9;if(b.y>myT)b.vy-=(b.y-myT)*2*dt;if(b.y<myB)b.vy+=(myB-b.y)*2*dt}
+    b.vx*=FOCUS===b?.8:.94;b.vy*=FOCUS===b?.8:.94;b.x+=b.vx;b.y+=b.vy;
+    const bob=Math.sin(t*.7+b.ph)*.05*(1-b.zoom);
+    // 按住：凑近，雾散开
+    const want=held===b?1:0;b.press+=(want-b.press)*(want?2.2:1.4)*dt*2;
+    const fog=b.fog*(1-b.press)*(1-b.zoom);
+    b.mat.roughness=.04+fog*.62;b.mat.thickness=b.r*(.45+fog*.5);
+    if(b.mat.userData.t)b.mat.userData.t.value=t;
+    if(b.card){b.card.material.uniforms.t.value=t;b.card.material.uniforms.fade.value=fog}
+    const s=(1+b.press*.22-(b.m?b.fog*.08:0))*(1+(Z-1)*b.zoom)*(1-b.off*.97);
+    b.g.scale.setScalar(s);
+    // 🔴 别的泡只缩小不藏，会躲在放大那颗后面，透过玻璃看见一团小字。缩完就整颗不画
+    b.g.visible=b.off<.96;
+    b.g.position.set(b.x,b.y+bob,b.press*1.2+b.zoom*.5);
+    b.g.rotation.y=Math.sin(t*.3+b.ph)*.12;b.g.rotation.x=Math.cos(t*.27+b.ph)*.06;
+    if(b.lab){const v=new THREE.Vector3(b.x,b.y+bob-b.r*s-.08,0).project(camera);
+      b.lab.style.left=((v.x+1)/2*innerWidth)+'px';b.lab.style.top=((1-v.y)/2*innerHeight)+'px';
+      b.lab.style.opacity=((b.named?1-b.fog*.55:b.press)*(1-b.off)*(1-b.zoom)).toFixed(2)}
+  });
+  renderer.render(scene,camera);
+  requestAnimationFrame(tick);
+}
+
+// ── 点开 ──
+const WALLS=['paper','blue','mist','night'];
+const hashKey=k=>[...k].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+const wallOf=m=>m.wall||WALLS[hashKey(m.key)%WALLS.length];   // 没自己选过的，按泡轮一张
+const keep=(m,f)=>{const s=SAVED[m.key]=SAVED[m.key]||{};f(s);save()};
+let REPLY=0;
+function openMem(b){
+  FOCUS=b;const m=b.m;
+  // 点开就算来看过：雾散了
+  b.fog=0;m.touch=Date.now();haze(m);label(b);keep(m,s=>s.touch=m.touch);
+  render(m);
+  $('open').scrollTop=0;
+  document.body.classList.add('opened');
+  setTimeout(()=>$('open').classList.add('on'),260);
+}
+function render(m){
+  const row=([w,t],c)=>`<div class="row ${w}${c?' ctx':''}"><div class="bub">${esc(t)}</div></div>`;
+  const wall=wallOf(m);
+  $('sheet').innerHTML=
+    `<div class="hd"><h2>${esc(m.t)}</h2><div class="r mono"><span>${m.d} · ${NAME[m.who]}存的</span><span class="more" id="more">···</span></div></div>`
+   +(m.tags.length?`<div class="tagline mono">${m.tags.map(esc).join(' · ')}</div>`:'')
+   +`<div id="presum"></div>`
+   +`<div class="card${m.glass?' glass':''}" data-wall="${wall}">${m.ctx.map(x=>row(x,1)).join('')}${m.lines.map(x=>row(x)).join('')}</div>`
+   +`<div class="drawer mono" id="drawer"><div class="opt">壁纸 ${WALLS.map(w=>`<span data-wall="${w}" class="${w==wall?'on':''}">${{paper:'米',blue:'蓝',mist:'雾',night:'夜'}[w]}</span>`).join('')}</div>`
+   +`<div class="opt"><span id="glass" class="${m.glass?'on':''}">玻璃气泡</span></div>`
+   +`<div class="sec mono">前情</div><div id="pre"></div></div>`
+   +`<div class="sec mono" id="cmh">评论</div><div id="notes"></div>`;
+  $('more').onclick=()=>$('drawer').classList.toggle('on');
+  $('drawer').onclick=e=>{const w=e.target.dataset.wall;
+    if(w){m.wall=w;keep(m,s=>s.wall=w);render(m);$('drawer').classList.add('on')}
+    if(e.target.id=='glass'){m.glass=!m.glass;keep(m,s=>s.glass=m.glass);render(m);$('drawer').classList.add('on')}};
+  renderPre(m);renderNotes(m);
+}
+// 前情两栏：你写你的，Ta 补 Ta 的
+function renderPre(m){
+  const you=`<div class="pre you"><div class="w mono">你</div>${m.pre.you?`<p>${esc(m.pre.you)}</p>`:`<p class="empty">这段是怎么来的……点这里写</p>`}</div>`;
+  const ta=`<div class="pre ta"><div class="w mono">Ta</div>${m.pre.ta?`<p>${esc(m.pre.ta)}</p>`
+    :m.askMe?`<p class="empty">等 Ta 写。Ta 下一次说话的时候会看到。</p>`:`<p class="empty">还没写。<span class="askme mono" id="askme">叫 Ta 写经过 ›</span></p>`}</div>`;
+  $('pre').innerHTML=you+ta;
+  const ak=$('askme');if(ak)ak.onclick=e=>{e.stopPropagation();m.askMe=1;keep(m,s=>s.askMe=1);renderPre(m);toast('叫了（demo 里只记在本地）')};
+  const p=$('pre').querySelector('.pre.you p');
+  p.onclick=()=>{const ta=document.createElement('textarea');ta.rows=3;ta.value=m.pre.you;p.replaceWith(ta);ta.focus();
+    ta.onblur=()=>{m.pre.you=ta.value.trim();keep(m,s=>s.pre={...(s.pre||{}),you:m.pre.you});renderPre(m)}};
+  renderPreSum(m);
+}
+// 卡上面只露写过的那几栏；一栏都没写就整块不出，要写去 ··· 里
+function renderPreSum(m){
+  const ws=['you','ta'].filter(w=>m.pre[w]);
+  $('presum').innerHTML=ws.length?`<div class="sec mono first">前情</div>`+ws.map(w=>`<div class="pre ${w}"><div class="w mono">${NAME[w]}</div><p>${esc(m.pre[w])}</p></div>`).join('')+`<div style="height:22px"></div>`:'';
+}
+// 评论：楼中楼，谁都能回谁
+function renderNotes(m){
+  const one=c=>{const kids=m.notes.filter(x=>x.re==c.id);
+    return `<div class="cm"><div class="w mono"><b class="${c.w}">${NAME[c.w]}</b><span>${fmtN(c.at)}</span></div><p>${esc(c.t)}</p>`
+      +`<span class="re mono" data-id="${c.id}">回复</span>${kids.length?`<div class="kids">${kids.map(one).join('')}</div>`:''}</div>`};
+  const top=m.notes.filter(c=>!c.re||!m.notes.some(x=>x.id==c.re));
+  const tgt=REPLY&&m.notes.find(c=>c.id==REPLY);
+  $('cmh').textContent=`评论 ${m.notes.length||''}`;
+  $('notes').innerHTML=(top.length?top.map(one).join(''):`<div class="empty-cm">还没人说话。</div>`)
+    +`<div class="box"><textarea id="ta" rows="1" placeholder="${tgt?'回复 '+NAME[tgt.w]+'：':'说点什么…'}"></textarea>`
+    +(tgt?`<span class="x mono" id="nore">取消</span>`:'')+`<div class="wbtn mono" id="wok">发</div></div>`
+    +`<div class="note mono">demo 里写的只存在这台设备上。接上你们的后端以后，Ta 下一轮会看到这句，可以回你。</div>`;
+  $('notes').onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(id){REPLY=+id;renderNotes(m);$('ta').focus()}};
+  if($('nore'))$('nore').onclick=()=>{REPLY=0;renderNotes(m)};
+  $('ta').oninput=e=>{e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px'};
+  $('wok').onclick=()=>{const t=$('ta').value.trim();if(!t)return;
+    const n={id:Date.now(),w:'you',t,at:Date.now(),re:REPLY};m.notes.push(n);keep(m,s=>s.notes=[...(s.notes||[]),n]);
+    m.touch=Date.now();keep(m,s=>s.touch=m.touch);REPLY=0;renderNotes(m)};
+}
+function close(){
+  $('open').classList.remove('on');document.body.classList.remove('opened');REPLY=0;
+  setTimeout(()=>{FOCUS=null},120);
+}
+$('back').onclick=close;
+$('gapTop').onclick=close;   // 点上面那颗泡也能回去
+
+// 圆 ←→ 软：乘在每颗自己的起伏上，记在这台设备上
+function setSoft(v){B.forEach(b=>{if(b.mat.userData.amp)b.mat.userData.amp.value=b.mat.userData.base*v});try{localStorage.setItem('keepsake_soft',v)}catch(e){}}
+$('soft').oninput=e=>setSoft(+e.target.value);
+{let v=1;try{const x=localStorage.getItem('keepsake_soft');if(x!=null)v=+x}catch(e){}$('soft').value=v}
+
+function renderTagBar(){
+  const ts=['全部','你存的','Ta 存的',...new Set(ALL.flatMap(m=>m.tags))];
+  $('tags').innerHTML=ts.map(t=>`<span data-t="${esc(t)}" class="${t==TAGF?'on':''}">${esc(t)}</span>`).join('');
+}
+$('tags').onclick=e=>{const t=e.target.dataset.t;if(t==null||t==TAGF||FOCUS)return;TAGF=t;BATCH=0;renderTagBar();clear();build()};
+
+// 字体到了再画泡里的字（最多等 6 秒）
+await Promise.race([document.fonts.load('34px "Noto Serif SC"','封存泡你我在'),new Promise(r=>setTimeout(r,6000))]);
+resize();build();renderTagBar();tick();
+setTimeout(()=>{$('load').style.opacity=0;setTimeout(()=>$('load').remove(),900)},400);
+</script>
+</body>
+</html>
